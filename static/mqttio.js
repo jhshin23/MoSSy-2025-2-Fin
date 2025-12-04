@@ -67,12 +67,14 @@ function onMessageArrived(msg) { // 매개변수 msg는 도착한 MQTT 메시지
                 //아무것도 안함			
 	}
 	else if(msg.payloadString === 'sitting_Authed'){
+                subscribe("seat/state");
 		showResult('sitting_Authed');
 	}
 	else if(msg.payloadString === 'sitting_notAuthed'){
 		showResult('sitting_not');
 	}
 	else if(msg.payloadString === 'away_Authed'){
+                unsubscribe("seat/state");
 		showResult('away_Authed');
 	}
 	else if(msg.payloadString === 'away_notAuthed'){
@@ -107,7 +109,6 @@ function showResult(authState) {
 	 document.getElementById("viewerAuthSpan").innerHTML = "인증실패";
      }
      else if(authState === 'sitting_Authed') {
-         subscribe("seat/state")
 	 document.getElementById("masterAuthSpan").innerHTML = "인증성공";
 	 document.getElementById("useState").innerHTML = "사용중";
      }
@@ -115,7 +116,6 @@ function showResult(authState) {
 	 document.getElementById("masterAuthSpan").innerHTML = "인증실패";
      }
      else if(authState === 'away_Authed') {
-         unsubscribe("seat/state")
 	 document.getElementById("masterAuthSpan").innerHTML = "인증성공";
 	 document.getElementById("useState").innerHTML = "사용안함";
 	 document.getElementById("sittingState").innerHTML = ""; 

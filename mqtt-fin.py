@@ -29,10 +29,15 @@ def auth(client, message):
         print("auth is running")
         global auth_running
         global seattingD
+        auth_logfile = open("auth_use_log.txt", "a", encoding="utf-8")
         isAuth = circuit.auth_temp_humi()
         splitmsg = message.decode().split(":")
         if(splitmsg[0] == "checkAuth"):
                 client.publish("authResult", "success" if isAuth else "fail")
+                log = "success" if isAuth else "fail"
+                now = time.time()
+                timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
+                auth_logfile(f"{timestamp}: 외부 인증 요청 -> 인증에 {log}")
                 auth_running = False
         elif(splitmsg[0] == "inputAuth"):
                 client.publish("authResult", "Book title:"+splitmsg[1] if isAuth else "reject")
@@ -63,13 +68,14 @@ client.connect(ip, 1883) # 브로커에 연결
 client.loop_start() # 메시지 루프를 실행하는 스레드 생성
 
 def ultrasonic_loop(client):
+        old_state = ""
+        global seat_base
+        global state_que
+        seat_logfile = open("seat_use_log.txt", "a", encoding="utf-8")
         while not stop_flag:
                 distance = circuit.measure_distance() # 초음파 센서로부터 거리 읽기
-                global seat_base
-                global state_que
                 consistency = True
                 state_que.append("착석중") if seat_base > distance else state_que.append("부재중")
-                print(seat_base)
                 client.publish("ultrasonic", distance) # “ultrasonic” 토픽으로 거리 전송
                 if len(state_que) == state_que.maxlen:
                         for s in state_que:
@@ -77,7 +83,13 @@ def ultrasonic_loop(client):
                                         consistency = False     
                 if len(state_que) == state_que.maxlen and consistency:
                         state = state_que[0]
-                        client.publish("seat/state", state)
+                        if old_state != state:
+                                client.publish("seat/state", state)
+                                old_state = state
+                                now = time.time()
+                                timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
+                                seat_logfile.write(f"{timestamp}에 {state}\n")
+                                seat_logfile.flush()
                 global start_time 
                 global endtime 
                 global seattingD
