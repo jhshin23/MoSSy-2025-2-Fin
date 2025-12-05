@@ -84,7 +84,7 @@ def ultrasonic_loop(client):
                 if len(state_que) == state_que.maxlen and consistency:
                         state = state_que[0]
                         if old_state != state:
-                                client.publish("seat/state", state)
+                                client.publish("seat/state", state, retain=True)
                                 old_state = state
                                 now = time.time()
                                 timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now))
