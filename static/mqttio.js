@@ -6,7 +6,8 @@ function connect() { // 브로커에 접속하는 함수
     if(connectionFlag == true)
     	return; // 현재 연결 상태이므로 다시 연결하지 않음
     const port = 9001 // mosquitto를 웹소켓으로 접속할 포트 번호
-    client = new Paho.MQTT.Client("192.168.137.231", Number(port), CLIENT_ID);
+    let broker = document.getElementById("broker").textcontent;
+    client = new Paho.MQTT.Client(broker, Number(port), CLIENT_ID);
     client.onConnectionLost = onConnectionLost; // 접속 끊김 시 onConnectLost() 실행
     client.onMessageArrived = onMessageArrived; // 메시지 도착 시 onMessageArrived() 실행
     client.connect({
