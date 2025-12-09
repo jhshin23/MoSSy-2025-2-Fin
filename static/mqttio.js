@@ -8,7 +8,6 @@ function connect() { // 브로커에 접속하는 함수
     const port = 9001 // mosquitto를 웹소켓으로 접속할 포트 번호
     let broker = document.getElementById("broker").textcontent;
     client = new Paho.MQTT.Client(broker, Number(port), CLIENT_ID);
-    client.onConnectionLost = onConnectionLost; // 접속 끊김 시 onConnectLost() 실행
     client.onMessageArrived = onMessageArrived; // 메시지 도착 시 onMessageArrived() 실행
     client.connect({
                 onSuccess:onConnect, // 브로커로부터 접속 응답 시 onConnect() 실행
@@ -20,12 +19,6 @@ function onConnect() {
         connectionFlag = true; // 연결 상태로 설정
    	client.subscribe("authResult");
    	client.subscribe("ultrasonic");
-}
-function onConnectionLost() {
-        if(connectionFlag != true) { // 연결되지 않은 경우
-        	document.getElementById("tabTitle").innerHTML = "(연결안됨)책상 대시보드";
-	}
-                return false;
 }
 	
 function subscribe(topic) {
@@ -55,33 +48,41 @@ function publish(topic, msg) {
 function onMessageArrived(msg) { // 매개변수 msg는 도착한 MQTT 메시지를 담고 있는 객체
    try{ console.log("MSG ARRIVED:", msg.destinationName, msg.payloadString);
     if(msg.destinationName === 'authResult'){
+        // 성공 실패를 뷰어 인증요청에 대해 표시 
 	if(msg.payloadString === 'success'){
 		showResult('success');
 	}
 	else if(msg.payloadString === 'fail'){
 		showResult('fail');
 	}
+        // 책 제목 변경 인증 요청 성공. 책제목을 변경 
 	else if(msg.payloadString.split(':')[0] === 'Book title'){
 		changeBookTitle(msg.payloadString.trim().split(':')[1]);	
 	}
+        // 실패하면 아무 변화 없음
 	else if(msg.payloadString.split(':')[0] === 'reject'){
                 //아무것도 안함			
 	}
+        // 착석 시작 버튼으로 인증 시작, 성공 시 착석상태 구독, 표시
 	else if(msg.payloadString === 'sitting_Authed'){
                 subscribe("seat/state");
 		showResult('sitting_Authed');
 	}
+        // 착석 시작 버튼으로 인증 시작, 실패 시 인증 실패 표시
 	else if(msg.payloadString === 'sitting_notAuthed'){
 		showResult('sitting_not');
 	}
+        // 떠나기 버튼으로 인증 시작, 성공 시 착석상태 구독해제, 사용중지표시
 	else if(msg.payloadString === 'away_Authed'){
                 unsubscribe("seat/state");
 		showResult('away_Authed');
 	}
+        // 떠나기 버튼으로 인증 시작, 실패 시 인증 실패 표시 
 	else if(msg.payloadString === 'away_notAuthed'){
 		showResult('away_not');
 	}
     }
+    // 초음파, 조도, 센서 측정값, 착석상태, 플립 판정을 브라우저에 표시
     else if(msg.destinationName=== 'ultrasonic'){
        addChartData0(parseFloat(msg.payloadString));
     }
@@ -94,6 +95,7 @@ function onMessageArrived(msg) { // 매개변수 msg는 도착한 MQTT 메시지
     else if(msg.destinationName === 'seat/state'){
        changeSittingState(msg.payloadString); 
     }
+    // 디버그용
     else {
 	console.log(`${msg.destinationName}|${payload}`);
 	}
@@ -102,6 +104,7 @@ function onMessageArrived(msg) { // 매개변수 msg는 도착한 MQTT 메시지
 }
 }
 
+// 인증 결과, 책상 사용 여부를 표시
 function showResult(authState) {
      if(authState === 'success'){
 	document.getElementById("viewerAuthSpan").innerHTML = "인증성공";
@@ -126,10 +129,12 @@ function showResult(authState) {
      }
 }
 
+// 책 제목 변경
 function changeBookTitle(title) {
 	document.getElementById("titleHead").innerHTML = title;
 }
 
+// 책장 넘김을 최근 10개까지 표시
 function pageFlipCount(cnt){
 	const reading = document.getElementById("shadowCount");
 	timeAndCnt = cnt.split(",");
@@ -142,6 +147,8 @@ function pageFlipCount(cnt){
 	}
 	reading.innerHTML = readingLog.join("<br>");
 }
+
+// 착석 상태를 표시
 function changeSittingState(state){
 	document.getElementById("sittingState").innerHTML = state; 
 }
