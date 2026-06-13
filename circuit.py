@@ -82,7 +82,8 @@ def measure_distance():
 
 def measure_temp_humi():
         global sensor
-        # HTU21D 장치로부터 온도, 습도 값 읽어 리턴
+        if sensor is None:
+            return 0.0, 0.0
         return float(sensor.temperature), float(sensor.relative_humidity)
 
 def auth_temp_humi():
@@ -92,6 +93,19 @@ def auth_temp_humi():
         THRESHOLD_SWITCH_TEMP = 29 # 스위치 인증으로 바꾸는 기준 온도
         THRESHOLD_SWITCH_HUMID = 55 # 스위치 인증으로 바꾸는 기준 습도
         result = False # 인증 결과를 저장
+        if sensor is None:
+            controlLED(led_green, 1)
+            controlLED(led_yellow, 1)
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                if buttonFlag:
+                    buttonFlag = False
+                    celebrateAuthLED()
+                    return True
+                time.sleep(0.1)
+            controlLED(led_green, 0)
+            controlLED(led_yellow, 0)
+            return False
         base_temp, base_humi = [], [] #인증 요청 직후의 온습도 측정값을 저장
         end_time = time.time() + 2 # 온습도 평균을 구하기 위한 2초 
         while time.time() < end_time:
@@ -157,8 +171,12 @@ GPIO.setup(led_yellow, GPIO.OUT)
 sda = 2 #GPIO2핀. sda 이름이 붙여진 핀
 scl = 3 #GPIO3핀. scl 이름이 붙여진 핀
 
-i2c = busio.I2C(scl, sda) # I2C 버스 통신을 실행하는 객체 생성
-sensor = HTU21D(i2c) # I2C 버스에서 HTU21D 장치를 제어하는 객체 생성
+try:
+    i2c = busio.I2C(scl, sda) # I2C 버스 통신을 실행하는 객체 생성
+    sensor = HTU21D(i2c) # I2C 버스에서 HTU21D 장치를 제어하는 객체 생성
+except Exception:
+    i2c = None
+    sensor = None
 
 #조도
 mcp = Adafruit_MCP3008.MCP3008(clk=11, cs=8, miso=9, mosi=10)
