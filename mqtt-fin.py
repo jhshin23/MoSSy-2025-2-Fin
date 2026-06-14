@@ -109,11 +109,12 @@ try:
         if btn == 1:
             button_pressed = True
 
-        # 초음파 publish
+        # 초음파, PIR publish
         client.publish("ultrasonic", distance)
+        client.publish("pir", pir)
 
         # 착석 판단
-        state_que.append("착석중" if (seat_base > distance or pir == 1) else "부재중")
+        state_que.append("착석중" if (seat_base > distance and pir == 1) else "부재중")
         if len(state_que) == state_que.maxlen and len(set(state_que)) == 1:
             state = state_que[0]
             if old_state != state:
