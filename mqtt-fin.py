@@ -51,6 +51,7 @@ def auth(client):
     elif splitmsg[0] == "setDistanceAuth":
         if isAuth:
             set_seat_base()
+        seattingD.clear()
         client.publish("authResult", "sitting_Authed" if isAuth else "sitting_notAuthed")
     elif splitmsg[0] == "notUse":
         if isAuth:
